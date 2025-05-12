@@ -3,12 +3,14 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from the frontend directory
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Абсолютный путь к корню проекта (где лежат index.html, css, js и т.д.)
+const STATIC_PATH = path.resolve(__dirname, '..');
 
-// Handle all routes by sending the index.html
+app.use(express.static(STATIC_PATH));
+
+// Для всех остальных маршрутов отдаём index.html
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    res.sendFile(path.join(STATIC_PATH, 'index.html'));
 });
 
 app.listen(PORT, () => {
