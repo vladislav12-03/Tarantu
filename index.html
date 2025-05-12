@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="admin-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-window">
+            <h2>Вход в админ-панель</h2>
+            <input type="password" id="admin-password" placeholder="Введите пароль" autocomplete="off">
+            <div class="modal-error" id="admin-error"></div>
+            <div class="modal-actions">
+                <button id="admin-login-btn">Войти</button>
+                <button id="admin-cancel-btn" class="modal-cancel">Отмена</button>
+            </div>
+        </div>
+    </div>
+    <div id="admin-panel" class="admin-panel-overlay" style="display:none;">
+        <div class="admin-panel-window">
+            <h2>Админ-панель</h2>
+            <div class="dashboard-block news-block admin-news-block">
+                <h3>Новости проекта:</h3>
+                <div class="news-list" id="admin-news-list"></div>
+                <button id="add-news-btn">Добавить новость</button>
+            </div>
+            <div class="dashboard-block news-block admin-users-block" style="margin-top: 24px;">
+                <h3>Пользователи:</h3>
+                <div class="users-list" id="admin-users-list"></div>
+                <button id="add-user-panel-btn">Добавить пользователя</button>
+            </div>
+            <button id="admin-logout-btn">Выйти</button>
+        </div>
+    </div>
+    <div id="add-news-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-window mini-news-modal">
+            <h2>Добавить новость</h2>
+            <textarea id="news-text" placeholder="Текст новости"></textarea>
+            <div class="modal-error" id="news-error"></div>
+            <div class="modal-actions">
+                <button id="save-news-btn">Сохранить</button>
+                <button id="cancel-news-btn" class="modal-cancel">Отмена</button>
+            </div>
+        </div>
+    </div>
+    <div id="login-overlay" class="login-overlay" style="display:none;">
+        <div class="login-window">
+            <h2>Вход</h2>
+            <input type="text" id="login-username" placeholder="Логин" autocomplete="off">
+            <input type="password" id="login-password" placeholder="Пароль" autocomplete="off">
+            <div class="modal-error" id="login-error"></div>
+            <div class="modal-actions">
+                <button id="login-btn">Войти</button>
+            </div>
+        </div>
+    </div>
+    <div id="add-report-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-window mini-news-modal">
+            <h2>Добавить отчёт</h2>
+            <input type="text" id="report-player" placeholder="Ник игрока">
+            <input type="text" id="report-reason" placeholder="Причина">
+            <input type="text" id="report-article" placeholder="Статья (номер правила)">
+            <select id="report-punishment">
+                <option value="Мут">Мут</option>
+                <option value="Бан">Бан</option>
+                <option value="Варн">Варн</option>
+            </select>
+            <input type="text" id="report-proof" placeholder="Доказательства (ссылка, скрин, лог) — не обязательно">
+            <div class="modal-error" id="report-error"></div>
+            <div class="modal-actions">
+                <button id="save-report-btn">Сохранить</button>
+                <button id="cancel-report-btn" class="modal-cancel">Отмена</button>
+            </div>
+        </div>
+    </div>
+    <div id="add-user-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-window mini-news-modal">
+            <h2>Добавить пользователя</h2>
+            <input type="text" id="user-login" placeholder="Логин">
+            <input type="password" id="user-password" placeholder="Пароль">
+            <select id="user-rank">
+                <option value="1">Ранг 1</option>
+                <option value="2">Ранг 2</option>
+                <option value="3">Ранг 3</option>
+                <option value="4">Ранг 4</option>
+                <option value="5">Ранг 5</option>
+            </select>
+            <div class="modal-error" id="user-error"></div>
+            <div class="modal-actions">
+                <button id="save-user-btn">Сохранить</button>
+                <button id="cancel-user-btn" class="modal-cancel">Отмена</button>
+            </div>
+        </div>
+    </div>
+    <div class="sidebar">
+        <div class="sidebar-header">Меню</div>
+        <ul class="sidebar-menu">
+            <li class="active" data-section="dashboard"><span class="icon">🏠</span> Главный экран</li>
+            <li data-section="reports"><span class="icon">📄</span> Репорты</li>
+            <li data-section="forms"><span class="icon">📝</span> Анкеты</li>
+            <li data-section="analytics"><span class="icon">📊</span> Отчёты</li>
+            <li data-section="profile"><span class="icon">👤</span> Профиль</li>
+            <li data-section="settings"><span class="icon">⚙️</span> Настройки</li>
+        </ul>
+        <div class="sidebar-bottom">
+            <button id="admin-panel-btn" class="admin-btn"><span class="icon">🔑</span> Админ-панель</button>
+            <button id="logout-btn" class="logout-btn"><span class="icon">📋</span> Выйти</button>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="content-card" id="content-area">
+            <div class="profile-block">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <!-- Пустое место под будущий аватар -->
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profile-username">Загрузка...</h2>
+                        <div class="profile-details">
+                            <span id="profile-rank" class="profile-rank">Загрузка...</span>
+                            <span id="profile-id" class="profile-id">Загрузка...</span>
+                            <span id="profile-last-login" class="profile-last-login">Загрузка...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="users-list-block">
+                <h3>Все пользователи</h3>
+                <div id="all-users-list" class="users-grid">
+                    <!-- Здесь будет список пользователей -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/users.js"></script>
+    <script src="js/forms.js"></script>
+    <script src="js/formsManager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

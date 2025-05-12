@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #181c24; }
+    </style>
+</head>
+<body>
+    <div class="login-overlay" style="display:flex;">
+        <div class="login-window">
+            <h2>Вход</h2>
+            <input type="text" id="login-username" placeholder="Логин" autocomplete="off">
+            <input type="password" id="login-password" placeholder="Пароль" autocomplete="off">
+            <div class="modal-error" id="login-error"></div>
+            <div class="modal-actions">
+                <button id="login-btn">Войти</button>
+            </div>
+        </div>
+    </div>
+    <script src="js/users.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверяем, что база данных инициализирована
+            console.log('Текущие пользователи:', usersDB.getAllUsers());
+
+            const loginBtn = document.getElementById('login-btn');
+            const loginUsername = document.getElementById('login-username');
+            const loginPassword = document.getElementById('login-password');
+            const loginError = document.getElementById('login-error');
+
+            function tryLogin() {
+                const username = loginUsername.value;
+                const password = loginPassword.value;
+                
+                console.log('Попытка входа:', { username, password });
+                console.log('Проверка пользователя:', usersDB.validateUser(username, password));
+                
+                if (usersDB.validateUser(username, password)) {
+                    localStorage.setItem('currentUser', username);
+                    window.location = 'index.html';
+                } else {
+                    loginError.textContent = 'Неверный логин или пароль';
+                }
+            }
+
+            loginBtn.addEventListener('click', tryLogin);
+            loginPassword.addEventListener('keydown', e => {
+                if (e.key === 'Enter') tryLogin();
+            });
+            setTimeout(() => loginUsername.focus(), 100);
+        });
+    </script>
+</body>
+</html> 
