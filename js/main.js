@@ -578,7 +578,7 @@ document.addEventListener('DOMContentLoaded', function() {
     resetInactivityTimer();
     // === КОНЕЦ АВТО-ВЫХОДА ===
 
-    // --- Добавление пользователя (только для админа) ---
+    // --- Добавление пользователя (только для админа, теперь через сервер) ---
     const addUserModal = document.getElementById('add-user-modal');
     const saveUserBtn = document.getElementById('save-user-btn');
     const cancelUserBtn = document.getElementById('cancel-user-btn');
@@ -621,8 +621,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // После добавления пользователя обновляем список
     if (saveUserBtn) {
         const origSaveUserHandler = saveUserBtn.onclick;
-        saveUserBtn.addEventListener('click', () => {
-            setTimeout(renderAdminUsers, 100);
+        saveUserBtn.addEventListener('click', async () => {
+            const login = userLoginInput.value.trim();
+            const password = userPasswordInput.value.trim();
+            const rank = userRankInput.value;
+            if (!login || !password || !rank) {
+                userError.textContent = 'Заполните все поля!';
+                return;
+            }
+            try {
+                const res = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: login, password, role: rank })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    addUserModal.style.display = 'none';
+                    alert('Пользователь успешно добавлен!');
+                    setTimeout(renderAdminUsers, 100);
+                } else {
+                    userError.textContent = data.error || 'Ошибка добавления пользователя';
+                }
+            } catch (e) {
+                userError.textContent = 'Ошибка соединения с сервером';
+            }
         });
     }
     // Рендерим пользователей при открытии админ-панели
@@ -638,28 +661,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (cancelUserBtn) {
         cancelUserBtn.addEventListener('click', () => {
             addUserModal.style.display = 'none';
-        });
-    }
-    if (saveUserBtn) {
-        saveUserBtn.addEventListener('click', () => {
-            const login = userLoginInput.value.trim();
-            const password = userPasswordInput.value.trim();
-            const rank = parseInt(userRankInput.value, 10);
-            if (!login || !password || !rank) {
-                userError.textContent = 'Заполните все поля!';
-                return;
-            }
-            let users = JSON.parse(localStorage.getItem('users') || '[]');
-            if (users.find(u => u.login === login)) {
-                userError.textContent = 'Пользователь с таким логином уже существует!';
-                return;
-            }
-            let id = login === 'admin' ? '7777777777' : generateUniqueUserId(users);
-            users.push({ login, password, rank, id });
-            localStorage.setItem('users', JSON.stringify(users));
-            addUserModal.style.display = 'none';
-            alert('Пользователь успешно добавлен!');
-            setTimeout(renderAdminUsers, 100);
         });
     }
 });
