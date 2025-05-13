@@ -587,22 +587,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const userError = document.getElementById('user-error');
 
     // --- Пользователи в админ-панели ---
-    function generateUniqueUserId(existingUsers) {
-        let id;
-        do {
-            id = String(Math.floor(1000000000 + Math.random() * 9000000000)); // 10 цифр
-        } while (existingUsers.some(u => u.id === id) || id === '7777777777');
-        return id;
-    }
-
-    function renderAdminUsers() {
+    async function renderAdminUsers() {
         const usersList = document.getElementById('admin-users-list');
         if (!usersList) return;
-        let users = JSON.parse(localStorage.getItem('users') || '[]');
+        let users = [];
+        try {
+            const res = await fetch('/api/users');
+            users = await res.json();
+        } catch (e) {
+            usersList.innerHTML = '<span style="color:#f44;">Ошибка загрузки пользователей</span>';
+            return;
+        }
         if (users.length === 0) {
             usersList.innerHTML = '<span style="color:#888;">Пока нет пользователей</span>';
         } else {
-            usersList.innerHTML = users.map(u => `<div class="admin-user-item"><b>${u.login}</b> <span style="color:#ffb84d;">[Ранг ${u.login === 'admin' ? '6' : u.rank}]</span> <span style="color:#888; font-size:0.98em;">ID: ${u.login === 'admin' ? '7777777777' : u.id || '—'}</span></div>`).join('');
+            usersList.innerHTML = users.map(u =>
+                `<div class="admin-user-item"><b>${u.username}</b> <span style="color:#ffb84d;">[Ранг ${u.username === 'admin' ? '6' : u.role}]</span> <span style="color:#888; font-size:0.98em;">ID: ${u.username === 'admin' ? '7777777777' : u.id || '—'}</span></div>`
+            ).join('');
         }
     }
 
