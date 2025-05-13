@@ -207,6 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // --- Шаблоны секций без лишних обёрток ---
     const sections = {
         dashboard: {
             title: 'Главный экран',
@@ -249,6 +250,12 @@ document.addEventListener('DOMContentLoaded', function() {
             text: 'Настройки системы и пользователя.'
         }
     };
+
+    // --- Проверка структуры и возврат правильного отступа ---
+    // Убедимся, что contentArea всегда имеет класс content-card
+    if (!contentArea.classList.contains('content-card')) {
+        contentArea.classList.add('content-card');
+    }
 
     // --- Базовая функция renderSection (фикс ReferenceError и дизайн) ---
     function renderSection(section) {
