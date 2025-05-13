@@ -103,6 +103,16 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
+// Получение списка пользователей
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await db.query('SELECT id, username, role FROM users ORDER BY username');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка получения списка пользователей', details: err.message });
+  }
+});
+
 // Абсолютный путь к корню проекта (где лежат index.html, css, js и т.д.)
 const STATIC_PATH = path.resolve(__dirname, '..');
 
