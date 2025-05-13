@@ -24,29 +24,32 @@
             </div>
         </div>
     </div>
-    <script src="js/users.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Проверяем, что база данных инициализирована
-            console.log('Текущие пользователи:', usersDB.getAllUsers());
-
             const loginBtn = document.getElementById('login-btn');
             const loginUsername = document.getElementById('login-username');
             const loginPassword = document.getElementById('login-password');
             const loginError = document.getElementById('login-error');
 
-            function tryLogin() {
+            async function tryLogin() {
                 const username = loginUsername.value;
                 const password = loginPassword.value;
-                
-                console.log('Попытка входа:', { username, password });
-                console.log('Проверка пользователя:', usersDB.validateUser(username, password));
-                
-                if (usersDB.validateUser(username, password)) {
-                    localStorage.setItem('currentUser', username);
-                    window.location = 'index.html';
-                } else {
-                    loginError.textContent = 'Неверный логин или пароль';
+                loginError.textContent = '';
+                try {
+                    const res = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        localStorage.setItem('currentUser', JSON.stringify(data));
+                        window.location = 'index.html';
+                    } else {
+                        loginError.textContent = data.error || 'Ошибка входа';
+                    }
+                } catch (e) {
+                    loginError.textContent = 'Ошибка соединения с сервером';
                 }
             }
 
