@@ -17,15 +17,41 @@ app.use(express.json());
   }
 })();
 
-// Регистрация пользователя
+// Получение пароля админ-панели
+app.get('/api/admin-password', async (req, res) => {
+  try {
+    const result = await db.query('SELECT admin_password FROM admin_settings LIMIT 1');
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Admin password not found' });
+    } else {
+      res.json({ password: result.rows[0].admin_password });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
+// Генерация уникального ID
+async function generateUniqueId() {
+  while (true) {
+    const id = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+    const result = await db.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return id;
+    }
+  }
+}
+
+// Модифицируем регистрацию пользователя
 app.post('/api/register', async (req, res) => {
   const { username, password, role } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
   try {
     const hash = await bcrypt.hash(password, 10);
+    const userId = await generateUniqueId();
     const result = await db.query(
-      'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username, role',
-      [username, hash, role || 'user']
+      'INSERT INTO users (id, username, password, role) VALUES ($1, $2, $3, $4) RETURNING id, username, role',
+      [userId, username, hash, role || 'user']
     );
     res.json({ user: result.rows[0] });
   } catch (err) {
