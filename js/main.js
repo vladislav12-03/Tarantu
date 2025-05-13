@@ -260,47 +260,46 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Функция для обновления профиля
-    function updateProfile() {
-        const currentUser = localStorage.getItem('currentUser');
+    async function updateProfile() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
         if (!currentUser) return;
 
-        const userData = usersDB.getUserByLogin(currentUser);
-        if (!userData) return;
-
         // Обновляем данные профиля
-        document.getElementById('profile-username').textContent = userData.login;
-        document.getElementById('profile-rank').textContent = `Ранг ${userData.login === 'admin' ? '6' : userData.rank}`;
-        document.getElementById('profile-id').textContent = `ID: ${userData.login === 'admin' ? '7777777777' : userData.id}`;
-        
+        document.getElementById('profile-username').textContent = currentUser.username;
+        document.getElementById('profile-rank').textContent = `Ранг ${currentUser.username === 'admin' ? '6' : currentUser.role}`;
+        document.getElementById('profile-id').textContent = `ID: ${currentUser.username === 'admin' ? '7777777777' : currentUser.id}`;
         // Получаем последний вход из localStorage
-        const lastLogin = localStorage.getItem(`lastLogin_${currentUser}`);
+        const lastLogin = localStorage.getItem(`lastLogin_${currentUser.username}`);
         if (lastLogin) {
             document.getElementById('profile-last-login').textContent = `Последний вход: ${lastLogin}`;
         }
-
         // Обновляем список всех пользователей
         updateUsersList();
     }
 
     // Функция для обновления списка пользователей
-    function updateUsersList() {
+    async function updateUsersList() {
         const usersList = document.getElementById('all-users-list');
         if (!usersList) return;
-
-        const users = usersDB.getAllUsers();
-        const currentUser = localStorage.getItem('currentUser');
-
+        let users = [];
+        try {
+            const res = await fetch('/api/users');
+            users = await res.json();
+        } catch (e) {
+            usersList.innerHTML = '<span style="color:#f44;">Ошибка загрузки пользователей</span>';
+            return;
+        }
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
         usersList.innerHTML = users.map(user => {
-            const isOnline = user.login === currentUser;
-            const lastLogin = localStorage.getItem(`lastLogin_${user.login}`);
+            const isOnline = user.username === (currentUser && currentUser.username);
+            const lastLogin = localStorage.getItem(`lastLogin_${user.username}`);
             const status = isOnline ? 'online' : 'offline';
             const statusText = isOnline ? 'В сети' : `Последний вход: ${lastLogin || '—'}`;
-
             return `
                 <div class="user-card">
-                    <div class="user-name">${user.login}</div>
-                    <div class="user-rank">Ранг ${user.login === 'admin' ? '6' : user.rank}</div>
-                    <div class="user-id">ID: ${user.login === 'admin' ? '7777777777' : user.id}</div>
+                    <div class="user-name">${user.username}</div>
+                    <div class="user-rank">Ранг ${user.username === 'admin' ? '6' : user.role}</div>
+                    <div class="user-id">ID: ${user.username === 'admin' ? '7777777777' : user.id}</div>
                     <div class="user-status ${status}">${statusText}</div>
                 </div>
             `;
