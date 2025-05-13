@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastReportSearch = '';
     let reportSearchVisible = false;
     function renderReports(filter = '') {
+        console.log('[DEBUG] renderReports вызван. filter:', filter, 'Stack:', new Error().stack);
         if (filter !== undefined) lastReportSearch = filter;
         const reportsSection = document.getElementById('content-area');
         if (!reportsSection) return;
@@ -272,8 +273,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Базовая функция renderSection (фикс ReferenceError и дизайн) ---
     function renderSection(section) {
+        console.log('[DEBUG] renderSection вызван с секцией:', section, 'Stack:', new Error().stack);
         if (sections[section]) {
-            // Обновляем только внутренний HTML, не трогаем класс content-card
             contentArea.innerHTML = `<h2>${sections[section].title}</h2>${sections[section].text}`;
             if (section === 'dashboard') {
                 startClock();
