@@ -113,12 +113,50 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
+// Получение всех отчётов
+app.get('/api/reports', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM reports ORDER BY date DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка получения отчётов', details: err.message });
+  }
+});
+
+// Добавление нового отчёта
+app.post('/api/reports', async (req, res) => {
+  const { player, reason, article, punishment, proof, admin } = req.body;
+  if (!player || !reason || !article || !punishment || !admin) {
+    return res.status(400).json({ error: 'Все обязательные поля должны быть заполнены' });
+  }
+  try {
+    const result = await db.query(
+      'INSERT INTO reports (player, reason, article, punishment, proof, admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [player, reason, article, punishment, proof || null, admin]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка добавления отчёта', details: err.message });
+  }
+});
+
+// Удаление отчёта
+app.delete('/api/reports/:id', async (req, res) => {
+  try {
+    await db.query('DELETE FROM reports WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка удаления отчёта', details: err.message });
+  }
+});
+
 // Абсолютный путь к корню проекта (где лежат index.html, css, js и т.д.)
 const STATIC_PATH = path.resolve(__dirname, '..');
 
+// СТАТИКА только после всех API-роутов
 app.use(express.static(STATIC_PATH));
 
-// Для всех остальных маршрутов отдаём index.html
+// Catch-all только в самом конце!
 app.get('*', (req, res) => {
     res.sendFile(path.join(STATIC_PATH, 'index.html'));
 });
