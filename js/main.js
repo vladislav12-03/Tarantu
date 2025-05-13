@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Текущая страница:', { isLoginPage, path: window.location.pathname });
     
     // Проверяем авторизацию
-    const currentUser = localStorage.getItem('currentUser');
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
     console.log('Текущий пользователь:', currentUser);
     
     if (!isLoginPage && !currentUser) {
@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Проверяем, является ли текущий пользователь администратором
-    const userData = usersDB.getUserByLogin(currentUser);
-    console.log('Данные пользователя из БД:', userData);
+    const userData = currentUser;
+    console.log('Данные пользователя из localStorage:', userData);
     const isAdmin = userData && userData.role === 'admin';
     console.log('Статус администратора:', isAdmin);
 
