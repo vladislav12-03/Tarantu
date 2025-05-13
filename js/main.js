@@ -29,145 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const menuItems = document.querySelectorAll('.sidebar-menu li');
     const contentArea = document.getElementById('content-area');
-    const adminPanel = document.getElementById('admin-panel');
-    const adminModal = document.getElementById('admin-modal');
-    const adminPassword = document.getElementById('admin-password');
-    const adminError = document.getElementById('admin-error');
-    const adminLoginBtn = document.getElementById('admin-login-btn');
-    const adminCancelBtn = document.getElementById('admin-cancel-btn');
-    const adminLogoutBtn = document.getElementById('admin-logout-btn');
-    const adminPanelBtn = document.getElementById('admin-panel-btn');
-
-    // Обработчик кнопки админ-панели
-    if (adminPanelBtn) {
-        adminPanelBtn.addEventListener('click', () => {
-            adminModal.style.display = 'flex';
-            adminError.textContent = '';
-            adminPassword.value = '';
-            setTimeout(() => adminPassword.focus(), 100);
-        });
-    }
-
-    // Обработчик входа в админ-панель
-    if (adminLoginBtn) {
-        adminLoginBtn.addEventListener('click', async () => {
-            const accessCode = adminPassword.value.trim();
-            if (!accessCode) {
-                adminError.textContent = 'Введите код доступа';
-                return;
-            }
-            try {
-                const res = await fetch('/api/check-admin-access', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ accessCode })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    adminModal.style.display = 'none';
-                    adminPanel.style.display = 'flex';
-                    renderAdminUsers();
-                } else {
-                    adminError.textContent = data.error || 'Неверный код доступа';
-                }
-            } catch (e) {
-                adminError.textContent = 'Ошибка соединения с сервером';
-            }
-        });
-    }
-
-    // Обработчик отмены входа в админ-панель
-    if (adminCancelBtn) {
-        adminCancelBtn.addEventListener('click', () => {
-            adminModal.style.display = 'none';
-        });
-    }
-
-    // Обработчик выхода из админ-панели
-    if (adminLogoutBtn) {
-        adminLogoutBtn.addEventListener('click', () => {
-            adminPanel.style.display = 'none';
-        });
-    }
-
-    // Функция для обновления профиля
-    async function updateProfile() {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        if (!currentUser) return;
-
-        // Обновляем данные профиля
-        document.getElementById('profile-username').textContent = currentUser.username;
-        document.getElementById('profile-rank').textContent = `Ранг ${currentUser.username === 'admin' ? '6' : currentUser.role}`;
-        document.getElementById('profile-id').textContent = `ID: ${currentUser.id}`;
-        // Получаем последний вход из localStorage
-        const lastLogin = localStorage.getItem(`lastLogin_${currentUser.username}`);
-        if (lastLogin) {
-            document.getElementById('profile-last-login').textContent = `Последний вход: ${lastLogin}`;
-        }
-        // Обновляем список всех пользователей
-        updateUsersList();
-    }
-
-    // Функция для обновления списка пользователей
-    async function updateUsersList() {
-        const usersList = document.getElementById('all-users-list');
-        if (!usersList) return;
-        let users = [];
-        try {
-            const res = await fetch('/api/users');
-            users = await res.json();
-        } catch (e) {
-            usersList.innerHTML = '<span style="color:#f44;">Ошибка загрузки пользователей</span>';
-            return;
-        }
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        usersList.innerHTML = users.map(user => {
-            const isOnline = user.username === (currentUser && currentUser.username);
-            const lastLogin = localStorage.getItem(`lastLogin_${user.username}`);
-            const status = isOnline ? 'online' : 'offline';
-            const statusText = isOnline ? 'В сети' : `Последний вход: ${lastLogin || '—'}`;
-            return `
-                <div class="user-card">
-                    <div class="user-name">${user.username}</div>
-                    <div class="user-rank">Ранг ${user.username === 'admin' ? '6' : user.role}</div>
-                    <div class="user-id">ID: ${user.id}</div>
-                    <div class="user-status ${status}">${statusText}</div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // Обновляем профиль при входе
-    function updateLastLogin() {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        if (!currentUser) return;
-
-        const now = new Date();
-        const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yyyy = now.getFullYear();
-        const hh = String(now.getHours()).padStart(2, '0');
-        const min = String(now.getMinutes()).padStart(2, '0');
-        const date = `${dd}.${mm}.${yyyy} ${hh}:${min}`;
-        
-        localStorage.setItem(`lastLogin_${currentUser.username}`, date);
-        updateProfile();
-    }
-
-    // Обновляем профиль при переключении на вкладку профиля
-    const origRenderSection = renderSection;
-    renderSection = function(section) {
-        origRenderSection(section);
-        if (section === 'profile') {
-            updateProfile();
-        } else if (section === 'reports') {
-            renderReports();
-        }
-    };
-
-    // Инициализация
-    updateLastLogin();
-    updateProfile();
 
     // --- Новости (общий массив для главной и админки) ---
     let news = [];
@@ -398,6 +259,94 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // Функция для обновления профиля
+    async function updateProfile() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        if (!currentUser) return;
+
+        // Обновляем данные профиля
+        document.getElementById('profile-username').textContent = currentUser.username;
+        document.getElementById('profile-rank').textContent = `Ранг ${currentUser.username === 'admin' ? '6' : currentUser.role}`;
+        document.getElementById('profile-id').textContent = `ID: ${currentUser.username === 'admin' ? '7777777777' : currentUser.id}`;
+        // Получаем последний вход из localStorage
+        const lastLogin = localStorage.getItem(`lastLogin_${currentUser.username}`);
+        if (lastLogin) {
+            document.getElementById('profile-last-login').textContent = `Последний вход: ${lastLogin}`;
+        }
+        // Обновляем список всех пользователей
+        updateUsersList();
+    }
+
+    // Функция для обновления списка пользователей
+    async function updateUsersList() {
+        const usersList = document.getElementById('all-users-list');
+        if (!usersList) return;
+        let users = [];
+        try {
+            const res = await fetch('/api/users');
+            users = await res.json();
+        } catch (e) {
+            usersList.innerHTML = '<span style="color:#f44;">Ошибка загрузки пользователей</span>';
+            return;
+        }
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        usersList.innerHTML = users.map(user => {
+            const isOnline = user.username === (currentUser && currentUser.username);
+            const lastLogin = localStorage.getItem(`lastLogin_${user.username}`);
+            const status = isOnline ? 'online' : 'offline';
+            const statusText = isOnline ? 'В сети' : `Последний вход: ${lastLogin || '—'}`;
+            return `
+                <div class="user-card">
+                    <div class="user-name">${user.username}</div>
+                    <div class="user-rank">Ранг ${user.username === 'admin' ? '6' : user.role}</div>
+                    <div class="user-id">ID: ${user.username === 'admin' ? '7777777777' : user.id}</div>
+                    <div class="user-status ${status}">${statusText}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Обновляем профиль при входе
+    function updateLastLogin() {
+        const currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) return;
+
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const date = `${dd}.${mm}.${yyyy} ${hh}:${min}`;
+        
+        localStorage.setItem(`lastLogin_${currentUser}`, date);
+        updateProfile();
+    }
+
+    // Обновляем профиль при переключении на вкладку профиля
+    const origRenderSection = renderSection;
+    renderSection = function(section) {
+        origRenderSection(section);
+        if (section === 'profile') {
+            updateProfile();
+        } else if (section === 'reports') {
+            renderReports();
+        }
+    };
+
+    // Обновляем последний вход при загрузке страницы
+    updateLastLogin();
+
+    menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const section = item.getAttribute('data-section');
+            console.log('Нажата кнопка меню:', section);
+            document.querySelector('.sidebar-menu li.active').classList.remove('active');
+            item.classList.add('active');
+            renderSection(section);
+        });
+    });
+
     // Часы и дата
     function startClock() {
         const timeEl = document.getElementById('clock-time');
@@ -431,6 +380,99 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // При загрузке сразу показываем главный экран с часами
     renderSection('dashboard');
+
+    // --- Админ-панель ---
+    const adminBtn = document.getElementById('admin-panel-btn');
+    const adminModal = document.getElementById('admin-modal');
+    const adminPanel = document.getElementById('admin-panel');
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    const adminCancelBtn = document.getElementById('admin-cancel-btn');
+    const adminLogoutBtn = document.getElementById('admin-logout-btn');
+    const adminPasswordInput = document.getElementById('admin-password');
+    const adminError = document.getElementById('admin-error');
+
+    console.log('Найдены элементы админ-панели:', {
+        adminBtn: !!adminBtn,
+        adminModal: !!adminModal,
+        adminPanel: !!adminPanel,
+        adminLoginBtn: !!adminLoginBtn,
+        adminCancelBtn: !!adminCancelBtn,
+        adminLogoutBtn: !!adminLogoutBtn,
+        adminPasswordInput: !!adminPasswordInput,
+        adminError: !!adminError
+    });
+
+    if (adminBtn) {
+        // Показываем кнопку админ-панели всем
+        adminBtn.style.display = 'block';
+        console.log('Кнопка админ-панели:', { display: adminBtn.style.display });
+        
+        adminBtn.addEventListener('click', () => {
+            console.log('Нажата кнопка админ-панели');
+            adminModal.style.display = 'flex';
+            adminPasswordInput.value = '';
+            adminError.textContent = '';
+            setTimeout(() => adminPasswordInput.focus(), 100);
+        });
+    } else {
+        console.error('Кнопка админ-панели не найдена!');
+    }
+
+    if (adminCancelBtn) {
+        adminCancelBtn.addEventListener('click', () => {
+            console.log('Нажата кнопка отмены в админ-панели');
+            adminModal.style.display = 'none';
+        });
+    }
+
+    if (adminLoginBtn) {
+        adminLoginBtn.addEventListener('click', async () => {
+            console.log('Нажата кнопка входа в админ-панель');
+            const inputCode = adminPasswordInput.value;
+            console.log('Введенный код:', inputCode);
+            
+            try {
+                const res = await fetch('/api/admin-password');
+                const data = await res.json();
+                if (res.ok && inputCode === data.password) {
+                    console.log('Код верный, открываем админ-панель');
+                    adminModal.style.display = 'none';
+                    hideAllOverlays();
+                    adminPanel.style.display = 'flex';
+                    adminError.textContent = '';
+                    renderNews();
+                } else {
+                    console.log('Неверный код');
+                    adminError.textContent = 'Неверный пароль';
+                }
+            } catch (err) {
+                console.error('Ошибка при проверке пароля:', err);
+                adminError.textContent = 'Ошибка сервера';
+            }
+        });
+    }
+
+    if (adminLogoutBtn) {
+        adminLogoutBtn.addEventListener('click', () => {
+            console.log('Нажата кнопка выхода из админ-панели');
+            adminPanel.style.display = 'none';
+        });
+    }
+
+    // --- Логин ---
+    const logoutBtn = document.getElementById('logout-btn');
+    console.log('Кнопка выхода найдена:', !!logoutBtn);
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            alert('Нажата кнопка выхода из системы'); // Временное уведомление для отладки
+            console.log('Нажата кнопка выхода из системы');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        });
+    } else {
+        console.error('Кнопка выхода не найдена!');
+    }
 
     // --- Добавление новости ---
     const addNewsBtn = document.getElementById('add-news-btn');
