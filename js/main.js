@@ -164,6 +164,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderReports(this.value);
             });
         }
+        // --- Добавляю обработчик для кнопки "Добавить отчёт" ---
+        const addReportBtn = document.getElementById('add-report-btn');
+        if (addReportBtn) {
+            addReportBtn.addEventListener('click', () => {
+                document.getElementById('add-report-modal').style.display = 'flex';
+                document.getElementById('report-error').textContent = '';
+                document.getElementById('report-player').value = '';
+                document.getElementById('report-reason').value = '';
+                document.getElementById('report-article').value = '';
+                document.getElementById('report-punishment').value = 'Мут';
+                document.getElementById('report-proof').value = '';
+            });
+        }
     }
 
     // Обработчик сохранения отчёта
