@@ -250,6 +250,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // --- Базовая функция renderSection (фикс ReferenceError) ---
+    function renderSection(section) {
+        if (sections[section]) {
+            contentArea.innerHTML = `<h2>${sections[section].title}</h2>${sections[section].text}`;
+            if (section === 'dashboard') {
+                startClock();
+                renderNews();
+            } else if (section === 'profile') {
+                updateProfile();
+            } else if (section === 'reports') {
+                renderReports();
+            }
+        }
+    }
+
     // Функция для обновления профиля
     async function updateProfile() {
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
