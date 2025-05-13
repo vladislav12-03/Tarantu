@@ -61,18 +61,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- ОТЧЁТЫ ---
-    let reports = JSON.parse(localStorage.getItem('reports') || '[]');
+    let reports = [];
 
-    // --- Объявление базовой renderSection ---
-    let renderSection = function(section) {
-        if (sections[section]) {
-            contentArea.innerHTML = `<h2>${sections[section].title}</h2>${sections[section].text}`;
-            if(section === 'dashboard') {
-                startClock();
-                renderNews();
-            }
+    async function loadReports() {
+        try {
+            const res = await fetch('/api/reports');
+            if (!res.ok) throw new Error('Ошибка загрузки отчётов');
+            reports = await res.json();
+            renderReports();
+        } catch (err) {
+            console.error('Ошибка при загрузке отчётов:', err);
         }
-    };
+    }
 
     let lastReportSearch = '';
     let reportSearchVisible = false;
@@ -90,43 +90,37 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
         <button id="add-report-btn" style="margin-bottom:20px;margin-top:14px;" class="admin-btn">Добавить отчёт</button>`;
+        
         let filteredReports = reports;
         if (lastReportSearch) {
             const f = lastReportSearch.toLowerCase();
-            filteredReports = reports.filter((r, idx) => {
-                // Поиск по номеру отчёта (#0001, 0001, часть номера)
-                const num = String(idx+1).padStart(4,'0');
-                const numWithHash = `#${num}`;
+            filteredReports = reports.filter(r => {
                 return (
-                    numWithHash.includes(f) ||
-                    num.includes(f) ||
+                    String(r.id).includes(f) ||
                     (r.player && r.player.toLowerCase().includes(f)) ||
                     (r.reason && r.reason.toLowerCase().includes(f)) ||
                     (r.article && r.article.toLowerCase().includes(f)) ||
                     (r.punishment && r.punishment.toLowerCase().includes(f)) ||
                     (r.admin && r.admin.toLowerCase().includes(f)) ||
                     (r.date && r.date.toLowerCase().includes(f)) ||
-                    (r.proof && r.proof.toLowerCase().includes(f)) ||
-                    (String(r.id || '').includes(f))
+                    (r.proof && r.proof.toLowerCase().includes(f))
                 );
             });
         }
+        
         if (filteredReports.length === 0) {
             html += '<div style="color:#888;">Пока нет отчётов</div>';
         } else {
             html += '<div class="reports-list">';
-            filteredReports.forEach((r) => {
-                // Получаем реальный номер отчёта в исходном массиве
-                const idx = reports.indexOf(r);
-                const num = String(idx+1).padStart(4,'0');
-                html += `<div class="report-block" data-idx="${idx}">
+            filteredReports.forEach(r => {
+                html += `<div class="report-block" data-id="${r.id}">
                     <div class="report-summary">
-                        <span class="report-num">#${num}</span>
+                        <span class="report-num">#${String(r.id).padStart(4,'0')}</span>
                         <button class="expand-report-btn" style="float:right; background:none; border:none; cursor:pointer; font-size:1.2em;">&#9654;</button>
                     </div>
                     <div class="report-details" style="display:none; margin-top:10px;">
                         <div><b>👤 Игрок:</b> ${r.player}</div>
-                        <div><b>📆 Дата:</b> ${r.date}</div>
+                        <div><b>📆 Дата:</b> ${new Date(r.date).toLocaleString()}</div>
                         <div><b>🚨 Причина:</b> ${r.reason}</div>
                         <div><b>📜 Статья:</b> ${r.article}</div>
                         <div><b>⏳ Наказание:</b> ${r.punishment}</div>
@@ -137,20 +131,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             html += '</div>';
         }
+        
         reportsSection.innerHTML = html;
-        const addReportBtn = document.getElementById('add-report-btn');
-        if (addReportBtn) {
-            addReportBtn.addEventListener('click', () => {
-                document.getElementById('add-report-modal').style.display = 'flex';
-                document.getElementById('report-error').textContent = '';
-                document.getElementById('report-player').value = '';
-                document.getElementById('report-reason').value = '';
-                document.getElementById('report-article').value = '';
-                document.getElementById('report-punishment').value = 'Мут';
-                document.getElementById('report-proof').value = '';
-            });
-        }
-        // Навешиваем обработчики на стрелочки
+        
+        // Навешиваем обработчики
         document.querySelectorAll('.expand-report-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const block = this.closest('.report-block');
@@ -160,7 +144,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 details.style.display = expanded ? 'none' : 'block';
             });
         });
-        // Поиск по отчётам
+        
+        // Поиск
         const searchInput = document.getElementById('report-search');
         const showSearchBtn = document.getElementById('show-report-search');
         if (showSearchBtn && searchInput) {
@@ -181,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- Обработчики для модалки отчёта ---
+    // Обработчик сохранения отчёта
     const saveReportBtn = document.getElementById('save-report-btn');
     const cancelReportBtn = document.getElementById('cancel-report-btn');
     if (cancelReportBtn) {
@@ -190,29 +175,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     if (saveReportBtn) {
-        saveReportBtn.addEventListener('click', () => {
+        saveReportBtn.addEventListener('click', async () => {
             const player = document.getElementById('report-player').value.trim();
             const reason = document.getElementById('report-reason').value.trim();
             const article = document.getElementById('report-article').value.trim();
             const punishment = document.getElementById('report-punishment').value;
             const proof = document.getElementById('report-proof').value.trim();
             const error = document.getElementById('report-error');
+            
             if (!player || !reason || !article || !punishment) {
                 error.textContent = 'Заполните все обязательные поля!';
                 return;
             }
-            const now = new Date();
-            const dd = String(now.getDate()).padStart(2, '0');
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const yyyy = now.getFullYear();
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const date = `${dd}.${mm}.${yyyy} ${hh}:${min}`;
-            const admin = userData && userData.login ? userData.login : '—';
-            reports.push({ player, reason, article, punishment, proof, admin, date });
-            localStorage.setItem('reports', JSON.stringify(reports));
-            document.getElementById('add-report-modal').style.display = 'none';
-            renderReports();
+            
+            try {
+                const admin = userData && userData.login ? userData.login : '—';
+                const res = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ player, reason, article, punishment, proof, admin })
+                });
+                
+                if (!res.ok) throw new Error('Ошибка сохранения отчёта');
+                
+                document.getElementById('add-report-modal').style.display = 'none';
+                await loadReports(); // Перезагружаем отчёты
+            } catch (err) {
+                console.error('Ошибка при сохранении отчёта:', err);
+                error.textContent = 'Ошибка сохранения отчёта';
+            }
         });
     }
 
@@ -679,6 +670,9 @@ document.addEventListener('DOMContentLoaded', function() {
             addUserModal.style.display = 'none';
         });
     }
+
+    // Загружаем отчёты при загрузке страницы
+    loadReports();
 });
 
 // Глобальная функция для теста админ-панели
