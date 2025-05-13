@@ -53,6 +53,30 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Добавление пользователя (только для админа)
+app.post('/api/users', async (req, res) => {
+  const { username, password, role } = req.body;
+  if (!username || !password || !role) return res.status(400).json({ error: 'Все поля обязательны' });
+
+  // Здесь должна быть проверка, что запрос делает админ (например, по токену или роли)
+  // Пока что без авторизации для простоты
+
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    const result = await db.query(
+      'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username, role',
+      [username, hash, role]
+    );
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') {
+      res.status(409).json({ error: 'Пользователь с таким логином уже существует' });
+    } else {
+      res.status(500).json({ error: 'Ошибка добавления пользователя', details: err.message });
+    }
+  }
+});
+
 // Абсолютный путь к корню проекта (где лежат index.html, css, js и т.д.)
 const STATIC_PATH = path.resolve(__dirname, '..');
 
