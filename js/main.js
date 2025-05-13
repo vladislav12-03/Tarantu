@@ -250,9 +250,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // --- Базовая функция renderSection (фикс ReferenceError) ---
+    // --- Базовая функция renderSection (фикс ReferenceError и дизайн) ---
     function renderSection(section) {
         if (sections[section]) {
+            // Обновляем только внутренний HTML, не трогаем класс content-card
             contentArea.innerHTML = `<h2>${sections[section].title}</h2>${sections[section].text}`;
             if (section === 'dashboard') {
                 startClock();
