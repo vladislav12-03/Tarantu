@@ -407,6 +407,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // При загрузке сразу показываем главный экран с часами
     renderSection('dashboard');
+    // Делаем активной вкладку 'Главный экран'
+    document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+    const dashboardTab = document.querySelector('.sidebar-menu li[data-section="dashboard"]');
+    if (dashboardTab) dashboardTab.classList.add('active');
+    loadReports();
 
     // --- Админ-панель ---
     const adminBtn = document.getElementById('admin-panel-btn');
@@ -706,9 +711,6 @@ document.addEventListener('DOMContentLoaded', function() {
             addUserModal.style.display = 'none';
         });
     }
-
-    // Загружаем отчёты при загрузке страницы
-    loadReports();
 });
 
 // Глобальная функция для теста админ-панели
