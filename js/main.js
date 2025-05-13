@@ -597,20 +597,29 @@ document.addEventListener('DOMContentLoaded', function() {
     async function renderAdminUsers() {
         const usersList = document.getElementById('admin-users-list');
         if (!usersList) return;
-        let users = [];
+        
         try {
             const res = await fetch('/api/users');
-            users = await res.json();
-        } catch (e) {
-            usersList.innerHTML = '<span style="color:#f44;">Ошибка загрузки пользователей</span>';
-            return;
-        }
-        if (users.length === 0) {
-            usersList.innerHTML = '<span style="color:#888;">Пока нет пользователей</span>';
-        } else {
-            usersList.innerHTML = users.map(u =>
-                `<div class="admin-user-item"><b>${u.username}</b> <span style="color:#ffb84d;">[Ранг ${u.username === 'admin' ? '6' : u.role}]</span> <span style="color:#888; font-size:0.98em;">ID: ${u.username === 'admin' ? '7777777777' : u.id || '—'}</span></div>`
-            ).join('');
+            if (!res.ok) throw new Error('Ошибка загрузки пользователей');
+            const users = await res.json();
+            
+            if (users.length === 0) {
+                usersList.innerHTML = '<div style="color:#888;padding:20px;text-align:center;">Пока нет пользователей</div>';
+                return;
+            }
+
+            usersList.innerHTML = users.map(user => `
+                <div class="admin-user-item" style="background:#23283a;padding:12px;margin-bottom:8px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <span style="font-weight:600;color:#fff;">${user.username}</span>
+                        <span style="color:#ffb84d;margin-left:8px;">[Ранг ${user.username === 'admin' ? '6' : user.role}]</span>
+                    </div>
+                    <span style="color:#888;font-size:0.9em;">ID: ${user.id}</span>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error('Ошибка при загрузке пользователей:', err);
+            usersList.innerHTML = '<div style="color:#f44;padding:20px;text-align:center;">Ошибка загрузки пользователей</div>';
         }
     }
 
