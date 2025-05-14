@@ -62,7 +62,7 @@ function renderForms() {
         return;
     }
 
-    const html = `
+    let html = `
         <div class="forms-controls">
             <div class="search-box">
                 <input type="text" id="forms-search" placeholder="Поиск по заявкам...">
@@ -77,48 +77,50 @@ function renderForms() {
             </div>
         </div>
         <div class="forms-list">
-            ${forms.map(form => `
-                <div class="form-item" data-id="${form.id}">
-                    <div class="form-header">
-                        <span class="form-id">#${form.id}</span>
-                        <span class="form-role">${formsCriteria[form.role].icon} ${formsCriteria[form.role].title}</span>
-                        <span class="form-date">${new Date(form.date).toLocaleDateString()}</span>
-                        <span class="form-status ${form.status}">${form.status}</span>
+    `;
+    forms.forEach(form => {
+        html += `
+            <div class="form-block" data-id="${form.id}">
+                <div class="form-summary">
+                    <span class="form-num">#${String(form.id).padStart(5,'0')}</span>
+                    <span class="form-role">${formsCriteria[form.role]?.icon || ''} ${formsCriteria[form.role]?.title || form.role}</span>
+                    <span class="form-date">${new Date(form.date).toLocaleDateString()}</span>
+                    <span class="form-status ${form.status}">${form.status}</span>
+                    <button class="expand-form-btn" style="float:right; background:none; border:none; cursor:pointer; font-size:1.2em;">&#9654;</button>
+                </div>
+                <div class="form-details" style="display:none; margin-top:10px;">
+                    <div style="margin-bottom:10px;">
+                        ${Object.entries(form.data).map(([key, value]) => `
+                            <div><b>${formsCriteria[form.role]?.fields.find(f => f.id === key)?.label || key}:</b> ${value}</div>
+                        `).join('')}
                     </div>
-                    <div class="form-content" style="display: none;">
-                        <div class="form-details">
-                            ${Object.entries(form.data).map(([key, value]) => `
-                                <div class="form-field">
-                                    <label>${formsCriteria[form.role].fields.find(f => f.id === key)?.label || key}:</label>
-                                    <div class="form-value">${value}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="form-actions">
-                            <button onclick="updateFormStatus(${form.id}, 'approved')" class="btn-approve">Одобрить</button>
-                            <button onclick="updateFormStatus(${form.id}, 'rejected')" class="btn-reject">Отклонить</button>
-                            <button onclick="deleteForm(${form.id})" class="btn-delete">Удалить</button>
-                        </div>
+                    <div class="form-actions">
+                        <button onclick="updateFormStatus(${form.id}, 'approved')" class="btn-approve">Одобрить</button>
+                        <button onclick="updateFormStatus(${form.id}, 'rejected')" class="btn-reject">Отклонить</button>
+                        <button onclick="deleteForm(${form.id})" class="btn-delete">Удалить</button>
                     </div>
                 </div>
-            `).join('')}
-        </div>
-    `;
-
+            </div>
+        `;
+    });
+    html += '</div>';
     container.innerHTML = html;
 
-    // Добавляем обработчики событий
-    document.querySelectorAll('.form-header').forEach(header => {
-        header.addEventListener('click', () => {
-            const content = header.nextElementSibling;
-            content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    // Добавляем обработчики раскрытия/сворачивания
+    document.querySelectorAll('.expand-form-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const block = this.closest('.form-block');
+            const details = block.querySelector('.form-details');
+            const expanded = details.style.display === 'block';
+            this.innerHTML = expanded ? '&#9654;' : '&#9660;';
+            details.style.display = expanded ? 'none' : 'block';
         });
     });
 
     // Поиск
     document.getElementById('forms-search').addEventListener('input', (e) => {
         const searchText = e.target.value.toLowerCase();
-        document.querySelectorAll('.form-item').forEach(item => {
+        document.querySelectorAll('.form-block').forEach(item => {
             const text = item.textContent.toLowerCase();
             item.style.display = text.includes(searchText) ? 'block' : 'none';
         });
@@ -127,7 +129,7 @@ function renderForms() {
     // Фильтр по статусу
     document.getElementById('forms-filter').addEventListener('change', (e) => {
         const status = e.target.value;
-        document.querySelectorAll('.form-item').forEach(item => {
+        document.querySelectorAll('.form-block').forEach(item => {
             if (status === 'all' || item.querySelector('.form-status').textContent === status) {
                 item.style.display = 'block';
             } else {
