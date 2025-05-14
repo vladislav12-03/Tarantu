@@ -1374,4 +1374,54 @@ body {
     text-align: center;
     padding: 2rem;
     color: #888;
+}
+
+/* --- Стили для заявок (анкет), 1-в-1 как у отчётов --- */
+.form-block {
+    background: rgba(36, 38, 56, 0.95);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px 0 rgba(255,184,77,0.10), 0 1.5px 8px 0 rgba(0,0,0,0.10);
+    border: 1.5px solid rgba(255,184,77,0.10);
+    padding: 32px 56px 28px 56px;
+    display: flex;
+    flex-direction: column;
+    min-width: 270px;
+    margin-bottom: 12px;
+    transition: box-shadow 0.2s, background 0.2s;
+    position: relative;
+    cursor: pointer;
+}
+.form-block:hover {
+    box-shadow: 0 8px 32px 0 rgba(255,184,77,0.18), 0 1.5px 8px 0 rgba(0,0,0,0.10);
+    background: #2d334a;
+}
+.form-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #ffb84d;
+}
+.expand-form-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.3em;
+    color: #ffb84d;
+    margin-left: 12px;
+    transition: color 0.2s;
+}
+.expand-form-btn:hover {
+    color: #ffd580;
+}
+.form-details {
+    margin-top: 12px;
+    background: #23283a;
+    border-radius: 10px;
+    padding: 10px 8px 2px 8px;
+    color: #fff;
+    font-size: 1.02rem;
+    box-shadow: none;
+    transition: max-height 0.2s, opacity 0.2s;
 } 
