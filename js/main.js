@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                const admin = userData && userData.login ? userData.login : '—';
+                const admin = userData && userData.username ? userData.username : '—';
                 const res = await fetch('/api/reports', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
