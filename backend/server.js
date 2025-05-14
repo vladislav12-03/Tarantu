@@ -150,6 +150,60 @@ app.delete('/api/reports/:id', async (req, res) => {
   }
 });
 
+// --- API для заявок (анкет) ---
+// Получить все заявки
+app.get('/api/forms', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM forms ORDER BY date DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка получения заявок', details: err.message });
+  }
+});
+
+// Добавить новую заявку
+app.post('/api/forms', async (req, res) => {
+  const { role, data } = req.body;
+  if (!role || !data) {
+    return res.status(400).json({ error: 'Роль и данные заявки обязательны' });
+  }
+  try {
+    const result = await db.query(
+      'INSERT INTO forms (role, data) VALUES ($1, $2) RETURNING *',
+      [role, data]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка добавления заявки', details: err.message });
+  }
+});
+
+// Обновить статус заявки
+app.patch('/api/forms/:id', async (req, res) => {
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: 'Новый статус обязателен' });
+  try {
+    const result = await db.query(
+      'UPDATE forms SET status = $1 WHERE id = $2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Заявка не найдена' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка обновления статуса', details: err.message });
+  }
+});
+
+// Удалить заявку
+app.delete('/api/forms/:id', async (req, res) => {
+  try {
+    await db.query('DELETE FROM forms WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка удаления заявки', details: err.message });
+  }
+});
+
 // Абсолютный путь к корню проекта (где лежат index.html, css, js и т.д.)
 const STATIC_PATH = path.resolve(__dirname, '..');
 
