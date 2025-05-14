@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <input id="report-search" type="text" placeholder="Поиск..." value="${lastReportSearch.replace(/"/g, '&quot;')}" style="width:180px;${reportSearchVisible ? 'display:block;' : 'display:none;'}margin-left:0;padding:8px 12px;border-radius:8px;border:1.5px solid #44495e;background:#181c24;color:#fff;font-size:1.02rem;outline:none;transition:width 0.2s;">
             </div>
         </div>
-        <button id="add-report-btn" style="margin-bottom:20px;margin-top:14px;" class="admin-btn">Добавить отчёт</button>`;
+         <button id="add-report-btn" style="margin-bottom:20px;margin-top:14px;" class="btn-primary">Добавить отчёт</button>`;
         
         let filteredReports = reports;
         if (lastReportSearch) {
