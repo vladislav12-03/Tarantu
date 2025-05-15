@@ -204,6 +204,44 @@ app.delete('/api/forms/:id', async (req, res) => {
   }
 });
 
+// --- API для новостей ---
+// Получить все новости
+app.get('/api/news', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM news ORDER BY date DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка получения новостей', details: err.message });
+  }
+});
+
+// Добавить новую новость
+app.post('/api/news', async (req, res) => {
+  const { date, text } = req.body;
+  if (!date || !text) {
+    return res.status(400).json({ error: 'Дата и текст новости обязательны' });
+  }
+  try {
+    const result = await db.query(
+      'INSERT INTO news (date, text) VALUES ($1, $2) RETURNING *',
+      [date, text]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка добавления новости', details: err.message });
+  }
+});
+
+// Удалить новость
+app.delete('/api/news/:id', async (req, res) => {
+  try {
+    await db.query('DELETE FROM news WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка удаления новости', details: err.message });
+  }
+});
+
 // Абсолютный путь к корню проекта (где лежат index.html, css, js и т.д.)
 const STATIC_PATH = path.resolve(__dirname, '..');
 
