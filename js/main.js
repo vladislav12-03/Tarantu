@@ -33,6 +33,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Новости (общий массив для главной и админки) ---
     let news = [];
 
+    async function loadNews() {
+        try {
+            const res = await fetch('/api/news');
+            if (!res.ok) throw new Error('Ошибка загрузки новостей');
+            news = await res.json();
+            renderNews();
+        } catch (err) {
+            console.error('Ошибка при загрузке новостей:', err);
+        }
+    }
+
     function renderNews() {
         // Главная страница
         const mainNewsList = document.querySelector('.news-list');
@@ -46,15 +57,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const adminNewsList = document.getElementById('admin-news-list');
         if (adminNewsList) {
             adminNewsList.innerHTML = news.length === 0 ? '<span style="color:#888;">Пока нет новостей</span>' : '';
-            news.forEach((item, idx) => {
-                adminNewsList.innerHTML += `<div class="admin-news-item"><span class="admin-news-date">${item.date}</span><span class="admin-news-text">${item.text}</span><button class="delete-news-btn" data-idx="${idx}">Удалить</button></div>`;
+            news.forEach((item) => {
+                adminNewsList.innerHTML += `<div class="admin-news-item"><span class="admin-news-date">${item.date}</span><span class="admin-news-text">${item.text}</span><button class="delete-news-btn" data-id="${item.id}">Удалить</button></div>`;
             });
             // Навешиваем обработчики на кнопки удаления
             adminNewsList.querySelectorAll('.delete-news-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const idx = +this.getAttribute('data-idx');
-                    news.splice(idx, 1);
-                    renderNews();
+                btn.addEventListener('click', async function() {
+                    const id = this.getAttribute('data-id');
+                    try {
+                        const res = await fetch(`/api/news/${id}`, { method: 'DELETE' });
+                        if (!res.ok) throw new Error('Ошибка удаления новости');
+                        await loadNews();
+                    } catch (err) {
+                        console.error('Ошибка при удалении новости:', err);
+                    }
                 });
             });
         }
@@ -90,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <input id="report-search" type="text" placeholder="Поиск..." value="${lastReportSearch.replace(/"/g, '&quot;')}" style="width:180px;${reportSearchVisible ? 'display:block;' : 'display:none;'}margin-left:0;padding:8px 12px;border-radius:8px;border:1.5px solid #44495e;background:#181c24;color:#fff;font-size:1.02rem;outline:none;transition:width 0.2s;">
             </div>
         </div>
-         <button id="add-report-btn" style="margin-bottom:20px;margin-top:14px;" class="btn-primary">Добавить отчёт</button>`;
+        <button id="add-report-btn" style="margin-bottom:20px;margin-top:14px;" class="btn-primary">Добавить отчёт</button>`;
         
         let filteredReports = reports;
         if (lastReportSearch) {
@@ -413,6 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dashboardTab = document.querySelector('.sidebar-menu li[data-section="dashboard"]');
     if (dashboardTab) dashboardTab.classList.add('active');
     loadReports();
+    loadNews(); // Добавляем загрузку новостей при старте
 
     // --- Админ-панель ---
     const adminBtn = document.getElementById('admin-panel-btn');
@@ -551,13 +568,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         // Автоматически подставляем текущую дату
         const now = new Date();
-        const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yyyy = now.getFullYear();
-        const date = `${dd}.${mm}.${yyyy}`;
-        news.unshift({date, text});
-        addNewsModal.style.display = 'none';
-        renderNews();
+        const date = now.toISOString().split('T')[0]; // Формат YYYY-MM-DD
+        
+        fetch('/api/news', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date, text })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Ошибка сохранения новости');
+            addNewsModal.style.display = 'none';
+            return loadNews();
+        })
+        .catch(err => {
+            console.error('Ошибка при сохранении новости:', err);
+            newsError.textContent = 'Ошибка сохранения новости';
+        });
     }
 
     // Функция для имитации нажатия кнопки админ-панели
