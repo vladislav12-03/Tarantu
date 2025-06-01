@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (adminNewsList) {
             adminNewsList.innerHTML = news.length === 0 ? '<span style="color:#888;">Пока нет новостей</span>' : '';
             news.forEach((item) => {
-                adminNewsList.innerHTML += `<div class="admin-news-item"><span class="admin-news-date">${item.date}</span><span class="admin-news-text">${item.text}</span><button class="delete-news-btn" data-id="${item.id}">Удалить</button></div>`;
+                adminNewsList.innerHTML += `<div class="admin-news-item"><span class="admin-news-date">${item.date}</span><span class="admin-news-text">${item.text}</span>${hasPermission('delete_news') ? `<button class="delete-news-btn" data-id="${item.id}">Удалить</button>` : ''}</div>`;
             });
             // Навешиваем обработчики на кнопки удаления
             adminNewsList.querySelectorAll('.delete-news-btn').forEach(btn => {
@@ -105,8 +105,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
                 <input id="report-search" type="text" placeholder="Поиск..." value="${lastReportSearch.replace(/"/g, '&quot;')}" style="width:180px;${reportSearchVisible ? 'display:block;' : 'display:none;'}margin-left:0;padding:8px 12px;border-radius:8px;border:1.5px solid #44495e;background:#181c24;color:#fff;font-size:1.02rem;outline:none;transition:width 0.2s;">
             </div>
-        </div>
-        <button id="add-report-btn" style="margin-bottom:20px;margin-top:14px;" class="btn-primary">Добавить отчёт</button>`;
+        </div>`;
+        
+        // Показываем кнопку добавления отчёта только если есть права
+        if (hasPermission('add_report')) {
+            html += `<button id="add-report-btn" style="margin-bottom:20px;margin-top:14px;" class="btn-primary">Добавить отчёт</button>`;
+        }
         
         let filteredReports = reports;
         if (lastReportSearch) {
@@ -143,6 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div><b>⏳ Наказание:</b> ${r.punishment}</div>
                         <div><b>📷 Доказательства:</b> ${r.proof ? r.proof : '<span style=\'color:#888\'>—</span>'}</div>
                         <div><b>👮‍♂️ Админ:</b> ${r.admin}</div>
+                        ${hasPermission('delete_report') ? `<button class="delete-report-btn" data-id="${r.id}">Удалить</button>` : ''}
                     </div>
                 </div>`;
             });
@@ -674,6 +679,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span style="color:#ffb84d;margin-left:8px;">[Ранг ${user.username === 'admin' ? '6' : user.role}]</span>
                     </div>
                     <span style="color:#888;font-size:0.9em;">ID: ${user.id}</span>
+                    ${hasPermission('edit_user') ? `<button class="edit-user-btn" data-id="${user.id}">Изменить</button>` : ''}
+                    ${hasPermission('delete_user') ? `<button class="delete-user-btn" data-id="${user.id}">Удалить</button>` : ''}
                 </div>
             `).join('');
         } catch (err) {
@@ -770,3 +777,38 @@ window.testAdminPanel = function() {
     }
 };
 console.log('Для теста админ-панели: testAdminPanel()');
+
+// Функция проверки прав доступа
+function checkPermission(userRank, requiredRank) {
+    return parseInt(userRank) >= parseInt(requiredRank);
+}
+
+// Функция проверки прав для конкретного действия
+function hasPermission(action) {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!currentUser) return false;
+    
+    const userRank = currentUser.username === 'admin' ? '6' : currentUser.role;
+    
+    const permissions = {
+        'view_reports': 1,
+        'add_report': 2,
+        'edit_report': 3,
+        'delete_report': 4,
+        'view_forms': 1,
+        'add_form': 1,
+        'edit_form': 3,
+        'delete_form': 4,
+        'view_users': 3,
+        'add_user': 4,
+        'edit_user': 4,
+        'delete_user': 5,
+        'view_news': 1,
+        'add_news': 4,
+        'delete_news': 5,
+        'view_logs': 5,
+        'view_settings': 6
+    };
+    
+    return checkPermission(userRank, permissions[action] || 6);
+}
