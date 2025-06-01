@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
             text: `
                 <div class="section-header">
                     <h2>Заявки на роли</h2>
-                    <button onclick="showNewFormModal()" class="btn-primary">Новая заявка</button>
+                    ${canAddForm() ? '<button onclick="showNewFormModal()" class="btn-primary">Новая заявка</button>' : ''}
                 </div>
                 <div id="forms-placeholder"></div>
             `
@@ -811,4 +811,12 @@ function hasPermission(action) {
     };
     
     return checkPermission(userRank, permissions[action] || 6);
+}
+
+// Функция для проверки, может ли пользователь добавлять заявки (ранг 3+)
+function canAddForm() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!currentUser) return false;
+    const userRank = currentUser.username === 'admin' ? 6 : parseInt(currentUser.role);
+    return userRank >= 3;
 }
