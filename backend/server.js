@@ -79,167 +79,201 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Добавление пользователя (только для админа)
-app.post('/api/users', async (req, res) => {
-  const { username, password, role } = req.body;
-  if (!username || !password || !role) return res.status(400).json({ error: 'Все поля обязательны' });
+// Middleware для проверки прав доступа
+function checkPermission(requiredRank) {
+    return (req, res, next) => {
+        const user = req.user; // Предполагается, что пользователь уже аутентифицирован
+        if (!user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        
+        const userRank = user.username === 'admin' ? 6 : parseInt(user.role);
+        if (userRank < requiredRank) {
+            return res.status(403).json({ error: 'Insufficient permissions' });
+        }
+        
+        next();
+    };
+}
 
-  // Здесь должна быть проверка, что запрос делает админ (например, по токену или роли)
-  // Пока что без авторизации для простоты
+// Модифицируем API endpoints с проверкой прав
 
-  try {
-    const hash = await bcrypt.hash(password, 10);
-    const result = await db.query(
-      'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username, role',
-      [username, hash, role]
-    );
-    res.json({ user: result.rows[0] });
-  } catch (err) {
-    if (err.code === '23505') {
-      res.status(409).json({ error: 'Пользователь с таким логином уже существует' });
-    } else {
-      res.status(500).json({ error: 'Ошибка добавления пользователя', details: err.message });
+// Получение списка пользователей (ранг 3+)
+app.get('/api/users', checkPermission(3), async (req, res) => {
+    try {
+        const result = await db.query('SELECT id, username, role FROM users ORDER BY username');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка получения списка пользователей', details: err.message });
     }
-  }
 });
 
-// Получение списка пользователей
-app.get('/api/users', async (req, res) => {
-  try {
-    const result = await db.query('SELECT id, username, role FROM users ORDER BY username');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка получения списка пользователей', details: err.message });
-  }
+// Добавление пользователя (ранг 4+)
+app.post('/api/users', checkPermission(4), async (req, res) => {
+    const { username, password, role } = req.body;
+    if (!username || !password || !role) return res.status(400).json({ error: 'Все поля обязательны' });
+    
+    // Проверяем, что текущий пользователь не пытается создать пользователя с рангом выше своего
+    const currentUserRank = req.user.username === 'admin' ? 6 : parseInt(req.user.role);
+    const newUserRank = parseInt(role);
+    if (newUserRank >= currentUserRank) {
+        return res.status(403).json({ error: 'Нельзя создать пользователя с рангом выше или равным своему' });
+    }
+
+    try {
+        const hash = await bcrypt.hash(password, 10);
+        const result = await db.query(
+            'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username, role',
+            [username, hash, role]
+        );
+        res.json({ user: result.rows[0] });
+    } catch (err) {
+        if (err.code === '23505') {
+            res.status(409).json({ error: 'Пользователь с таким логином уже существует' });
+        } else {
+            res.status(500).json({ error: 'Ошибка добавления пользователя', details: err.message });
+        }
+    }
 });
 
-// Получение всех отчётов
-app.get('/api/reports', async (req, res) => {
-  try {
-    const result = await db.query('SELECT * FROM reports ORDER BY date DESC');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка получения отчётов', details: err.message });
-  }
+// Удаление пользователя (ранг 5+)
+app.delete('/api/users/:id', checkPermission(5), async (req, res) => {
+    try {
+        const result = await db.query('DELETE FROM users WHERE id = $1 RETURNING *', [req.params.id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка удаления пользователя', details: err.message });
+    }
 });
 
-// Добавление нового отчёта
-app.post('/api/reports', async (req, res) => {
-  const { player, reason, article, punishment, proof, admin } = req.body;
-  if (!player || !reason || !article || !punishment || !admin) {
-    return res.status(400).json({ error: 'Все обязательные поля должны быть заполнены' });
-  }
-  try {
-    const result = await db.query(
-      'INSERT INTO reports (player, reason, article, punishment, proof, admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [player, reason, article, punishment, proof || null, admin]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка добавления отчёта', details: err.message });
-  }
+// Получение отчётов (ранг 1+)
+app.get('/api/reports', checkPermission(1), async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM reports ORDER BY date DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка получения отчётов', details: err.message });
+    }
 });
 
-// Удаление отчёта
-app.delete('/api/reports/:id', async (req, res) => {
-  try {
-    await db.query('DELETE FROM reports WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка удаления отчёта', details: err.message });
-  }
+// Добавление отчёта (ранг 2+)
+app.post('/api/reports', checkPermission(2), async (req, res) => {
+    const { player, reason, article, punishment, proof, admin } = req.body;
+    if (!player || !reason || !article || !punishment || !admin) {
+        return res.status(400).json({ error: 'Все обязательные поля должны быть заполнены' });
+    }
+    try {
+        const result = await db.query(
+            'INSERT INTO reports (player, reason, article, punishment, proof, admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [player, reason, article, punishment, proof || null, admin]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка добавления отчёта', details: err.message });
+    }
 });
 
-// --- API для заявок (анкет) ---
-// Получить все заявки
-app.get('/api/forms', async (req, res) => {
-  try {
-    const result = await db.query('SELECT * FROM forms ORDER BY date DESC');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка получения заявок', details: err.message });
-  }
+// Удаление отчёта (ранг 4+)
+app.delete('/api/reports/:id', checkPermission(4), async (req, res) => {
+    try {
+        await db.query('DELETE FROM reports WHERE id = $1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка удаления отчёта', details: err.message });
+    }
 });
 
-// Добавить новую заявку
-app.post('/api/forms', async (req, res) => {
-  const { role, data } = req.body;
-  if (!role || !data) {
-    return res.status(400).json({ error: 'Роль и данные заявки обязательны' });
-  }
-  try {
-    const result = await db.query(
-      'INSERT INTO forms (role, data) VALUES ($1, $2) RETURNING *',
-      [role, data]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка добавления заявки', details: err.message });
-  }
+// Получение заявок (ранг 1+)
+app.get('/api/forms', checkPermission(1), async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM forms ORDER BY date DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка получения заявок', details: err.message });
+    }
 });
 
-// Обновить статус заявки
-app.patch('/api/forms/:id', async (req, res) => {
-  const { status } = req.body;
-  if (!status) return res.status(400).json({ error: 'Новый статус обязателен' });
-  try {
-    const result = await db.query(
-      'UPDATE forms SET status = $1 WHERE id = $2 RETURNING *',
-      [status, req.params.id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Заявка не найдена' });
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка обновления статуса', details: err.message });
-  }
+// Добавление заявки (ранг 1+)
+app.post('/api/forms', checkPermission(1), async (req, res) => {
+    const { role, data } = req.body;
+    if (!role || !data) {
+        return res.status(400).json({ error: 'Роль и данные заявки обязательны' });
+    }
+    try {
+        const result = await db.query(
+            'INSERT INTO forms (role, data) VALUES ($1, $2) RETURNING *',
+            [role, data]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка добавления заявки', details: err.message });
+    }
 });
 
-// Удалить заявку
-app.delete('/api/forms/:id', async (req, res) => {
-  try {
-    await db.query('DELETE FROM forms WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка удаления заявки', details: err.message });
-  }
+// Обновление статуса заявки (ранг 3+)
+app.patch('/api/forms/:id', checkPermission(3), async (req, res) => {
+    const { status } = req.body;
+    if (!status) return res.status(400).json({ error: 'Новый статус обязателен' });
+    try {
+        const result = await db.query(
+            'UPDATE forms SET status = $1 WHERE id = $2 RETURNING *',
+            [status, req.params.id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Заявка не найдена' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка обновления статуса', details: err.message });
+    }
 });
 
-// --- API для новостей ---
-// Получить все новости
-app.get('/api/news', async (req, res) => {
-  try {
-    const result = await db.query('SELECT * FROM news ORDER BY date DESC');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка получения новостей', details: err.message });
-  }
+// Удаление заявки (ранг 4+)
+app.delete('/api/forms/:id', checkPermission(4), async (req, res) => {
+    try {
+        await db.query('DELETE FROM forms WHERE id = $1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка удаления заявки', details: err.message });
+    }
 });
 
-// Добавить новую новость
-app.post('/api/news', async (req, res) => {
-  const { date, text } = req.body;
-  if (!date || !text) {
-    return res.status(400).json({ error: 'Дата и текст новости обязательны' });
-  }
-  try {
-    const result = await db.query(
-      'INSERT INTO news (date, text) VALUES ($1, $2) RETURNING *',
-      [date, text]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка добавления новости', details: err.message });
-  }
+// Получение новостей (ранг 1+)
+app.get('/api/news', checkPermission(1), async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM news ORDER BY date DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка получения новостей', details: err.message });
+    }
 });
 
-// Удалить новость
-app.delete('/api/news/:id', async (req, res) => {
-  try {
-    await db.query('DELETE FROM news WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка удаления новости', details: err.message });
-  }
+// Добавление новости (ранг 4+)
+app.post('/api/news', checkPermission(4), async (req, res) => {
+    const { date, text } = req.body;
+    if (!date || !text) {
+        return res.status(400).json({ error: 'Дата и текст новости обязательны' });
+    }
+    try {
+        const result = await db.query(
+            'INSERT INTO news (date, text) VALUES ($1, $2) RETURNING *',
+            [date, text]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка добавления новости', details: err.message });
+    }
+});
+
+// Удаление новости (ранг 5+)
+app.delete('/api/news/:id', checkPermission(5), async (req, res) => {
+    try {
+        await db.query('DELETE FROM news WHERE id = $1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Ошибка удаления новости', details: err.message });
+    }
 });
 
 // Абсолютный путь к корню проекта (где лежат index.html, css, js и т.д.)
