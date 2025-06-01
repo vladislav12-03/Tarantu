@@ -5,6 +5,13 @@ const bcrypt = require('bcrypt');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ====== ВРЕМЕННЫЙ МИДДЛВАР ДЛЯ ТЕСТА (все запросы как от админа) ======
+app.use((req, res, next) => {
+  req.user = { username: 'admin', role: 6 };
+  next();
+});
+// ====== КОНЕЦ ВРЕМЕННОГО МИДДЛВАРА ======
+
 app.use(express.json());
 
 // Проверка подключения к базе
