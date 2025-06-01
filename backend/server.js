@@ -203,8 +203,8 @@ app.get('/api/forms', checkPermission(1), async (req, res) => {
     }
 });
 
-// Добавление заявки (ранг 1+)
-app.post('/api/forms', checkPermission(1), async (req, res) => {
+// Добавление заявки (ранг 3+)
+app.post('/api/forms', checkPermission(3), async (req, res) => {
     const { role, data } = req.body;
     if (!role || !data) {
         return res.status(400).json({ error: 'Роль и данные заявки обязательны' });
